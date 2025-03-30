@@ -5,26 +5,18 @@ say_status :tailwind, "Installing Tailwind CSS..."
 confirm = ask "This configuration will ovewrite your existing #{"postcss.config.js".bold.white}. Would you like to continue? [Yn]"
 return unless confirm.casecmp?("Y")
 
-run "yarn add -D tailwindcss"
-run "npx tailwindcss init"
-
-gsub_file "tailwind.config.js", "content: [],", <<~JS.strip
-  content: [
-      './src/**/*.{html,md,liquid,erb,serb,rb}',
-      './frontend/javascript/**/*.js',
-    ],
-JS
+run "npm install tailwindcss @tailwindcss/postcss --save-dev"
 
 create_file "postcss.config.js", <<~JS, force: true
-  module.exports = {
+  export default {
     plugins: {
-      'tailwindcss': {},
+      '@tailwindcss/postcss': {},
       'postcss-flexbugs-fixes': {},
       'postcss-preset-env': {
         autoprefixer: {
           flexbox: 'no-2009'
         },
-        stage: 2
+        stage: 3
       }
     }
   }
@@ -36,9 +28,7 @@ css_imports = <<~CSS
   @import "jit-refresh.css"; /* triggers frontend rebuilds */
 
   /* Set up Tailwind imports */
-  @tailwind base;
-  @tailwind components;
-  @tailwind utilities;
+  @import "tailwindcss";
 
 CSS
 
