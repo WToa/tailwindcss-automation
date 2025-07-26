@@ -58,20 +58,26 @@ if File.exist?(".gitignore")
 end
 
 create_builder "tailwind_jit.rb" do
-  <<~RUBY
+  <<~'RUBY'
     class Builders::TailwindJit < SiteBuilder
       def build
-        hook :site, :pre_reload do |_, paths|
-          # Skip if paths are not defined (e.g: from console reload)
-          next unless paths
+        return if ARGV.include?("--skip-tw-jit")
 
-          # Don't trigger refresh if it's a frontend-only change
-          next if paths.length == 1 && paths.first.ends_with?("manifest.json")
+        fast_refreshing = false
 
-          # Save out a comment file to trigger Tailwind's JIT
-          refresh_file = site.in_root_dir("frontend", "styles", "jit-refresh.css")
-          File.write refresh_file, "/* \#{Time.now.to_i} */"
-          throw :halt # don't continue the build, wait for watcher rebuild
+        hook :site, :fast_refresh do
+          fast_refreshing = true
+        end
+
+        hook :site, :post_write do
+          if fast_refreshing
+            fast_refreshing = false
+            Thread.new do
+              sleep 0.75
+              refresh_file = site.in_root_dir("frontend", "styles", "jit-refresh.css")
+              File.write refresh_file, "/* #{Time.now.to_i} */"
+            end
+          end
         end
       end
     end
